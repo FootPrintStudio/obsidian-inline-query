@@ -1,0 +1,18 @@
+.iq-inline {
+	display: inline;
+}
+
+.iq-error {
+	color: var(--text-error);
+	font-family: var(--font-monospace);
+	font-size: 0.9em;
+}
+
+.iq-result {
+	display: inline;
+}
+
+.iq-result :is(p, ul, ol) {
+	display: inline;
+	margin: 0;
+}

@@ -1,0 +1,10 @@
+{
+	"id": "inline-query",
+	"name": "Inline Query",
+	"version": "0.1.0",
+	"minAppVersion": "1.5.0",
+	"description": "Lightweight inline expressions for note metadata (FootPrintStudio Dataview inline replacement).",
+	"author": "FootPrintStudio",
+	"authorUrl": "https://github.com/FootPrintStudio",
+	"isDesktopOnly": false
+}
