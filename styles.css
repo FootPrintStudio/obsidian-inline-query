@@ -1,18 +1,136 @@
-.iq-inline {
+.pq-query-source,
+.cm-content .pq-hl-prefix,
+.cm-line .pq-hl-prefix {
+	font-family: var(--font-monospace);
+}
+
+.cm-line :is(.pq-hl-prefix, .pq-hl-kw, .pq-hl-string, .pq-hl-number, .pq-hl-ident, .pq-hl-fn, .pq-hl-op, .pq-hl-punct) {
+	font-family: var(--font-monospace);
+}
+
+.pq-hl-prefix {
+	color: var(--text-muted);
+	font-weight: 600;
+}
+
+.pq-hl-kw {
+	color: var(--color-purple);
+}
+
+.pq-hl-string {
+	color: var(--text-success);
+}
+
+.pq-hl-number {
+	color: var(--color-orange);
+}
+
+.pq-hl-ident {
+	color: var(--text-normal);
+}
+
+.pq-hl-fn {
+	color: var(--text-accent);
+	font-weight: 500;
+}
+
+.pq-hl-op {
+	color: var(--text-muted);
+}
+
+.pq-hl-punct {
+	color: var(--text-faint);
+}
+
+.pq-hl-text {
+	color: inherit;
+}
+
+.pq-code-shield {
+	font-family: var(--font-monospace);
+	font-size: var(--code-size);
+}
+
+.pq-inline {
 	display: inline;
 }
 
-.iq-error {
+.pq-error {
 	color: var(--text-error);
 	font-family: var(--font-monospace);
 	font-size: 0.9em;
 }
 
-.iq-result {
+.pq-result {
 	display: inline;
 }
 
-.iq-result :is(p, ul, ol) {
+.pq-result :is(p, ul, ol) {
 	display: inline;
 	margin: 0;
+}
+
+.pq-settings-tabs {
+	display: flex;
+	gap: 0;
+	margin: 0.75rem 0 1rem;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.pq-settings-tab {
+	padding: 0.45rem 0.9rem;
+	cursor: pointer;
+	color: var(--text-muted);
+	border-bottom: 2px solid transparent;
+	margin-bottom: -1px;
+	user-select: none;
+}
+
+.pq-settings-tab:hover {
+	color: var(--text-normal);
+}
+
+.pq-settings-tab.is-active {
+	color: var(--text-accent);
+	border-bottom-color: var(--interactive-accent);
+	font-weight: 600;
+}
+
+.pq-readme-panel,
+.pq-guide-panel {
+	max-height: 70vh;
+	overflow-y: auto;
+	padding-right: 0.5rem;
+}
+
+.pq-readme-panel h1,
+.pq-readme-panel h2,
+.pq-readme-panel h3,
+.pq-guide-panel h1,
+.pq-guide-panel h2,
+.pq-guide-panel h3 {
+	margin-top: 1.2em;
+}
+
+.pq-readme-panel pre,
+.pq-guide-panel pre {
+	overflow-x: auto;
+}
+
+.pq-guide-panel table {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 0.5em 0;
+}
+
+.pq-guide-panel th,
+.pq-guide-panel td {
+	border: 1px solid var(--background-modifier-border);
+	padding: 0.35em 0.6em;
+	text-align: left;
+	vertical-align: top;
+}
+
+.pq-guide-panel th {
+	background: var(--background-secondary);
 }

@@ -1,9 +1,9 @@
 {
-	"id": "inline-query",
-	"name": "Inline Query",
-	"version": "0.1.0",
+	"id": "property-query",
+	"name": "Property Query",
+	"version": "0.2.0",
 	"minAppVersion": "1.5.0",
-	"description": "Lightweight inline expressions for note metadata (FootPrintStudio Dataview inline replacement).",
+	"description": "Property Query Language (PQL) — inline metadata expressions with Reading view evaluation and syntax highlighting.",
 	"author": "FootPrintStudio",
 	"authorUrl": "https://github.com/FootPrintStudio",
 	"isDesktopOnly": false

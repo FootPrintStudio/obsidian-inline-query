@@ -1,18 +1,21 @@
 {
-	"name": "obsidian-inline-query",
-	"version": "0.1.0",
-	"description": "Lightweight inline expressions for Obsidian notes.",
+	"name": "obsidian-property-query",
+	"version": "0.2.0",
+	"description": "Property Query Language — inline metadata expressions for Obsidian.",
 	"main": "main.js",
 	"type": "module",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
-		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production"
+		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+		"test": "vitest run"
 	},
 	"license": "MIT",
 	"devDependencies": {
 		"@types/node": "^22.15.17",
 		"esbuild": "0.25.5",
+		"moment": "^2.30.1",
 		"obsidian": "latest",
-		"typescript": "^5.8.3"
+		"typescript": "^5.8.3",
+		"vitest": "^3.2.4"
 	}
 }

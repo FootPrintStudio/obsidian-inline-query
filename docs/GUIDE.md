@@ -1,0 +1,384 @@
+# Property Query — Language Guide
+
+Complete reference for **Property Query Language (PQL)** as implemented in v0.2.0.
+
+Expressions live in inline code with the **`q=`** prefix (configurable under Settings):
+
+```markdown
+`q= default(title, "Untitled")`
+```
+
+Open notes in **Reading view** to see results when **Enable in Reading view** is on. With evaluation off, Reading view shows syntax-colored query source instead.
+
+**Syntax highlighting** (Settings → *Syntax highlight inline queries*, on by default) colorizes `` `q= …` `` in the editor (Source mode and Live Preview) and in Reading view when evaluation is disabled. When Reading view evaluation is on, expressions are replaced by their results — no source highlighting there.
+
+---
+
+## Query syntax
+
+| Part | Rule |
+|------|------|
+| Prefix | `q=` at the start of inline code (default) |
+| Body | Single PQL expression |
+| Scope | Always the **current note** being rendered |
+| Whitespace | Ignored outside quoted strings |
+
+---
+
+## Context — where values come from
+
+### Frontmatter properties
+
+Bare names read YAML frontmatter on the current note:
+
+| Syntax | Resolves to |
+|--------|-------------|
+| `title` | Frontmatter field `title` |
+| `pageColour` | Frontmatter field `pageColour` |
+| `this.title` | Same as `title` (optional alias) |
+
+Missing fields evaluate to `null`.
+
+### Page metadata (`file.*`)
+
+Reserved namespace for native file metadata (not frontmatter):
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `file.name` | string | Basename without `.md` |
+| `file.path` | string | Vault path |
+| `file.folder` | string | Parent folder path |
+| `file.ctime` | date | Creation time |
+| `file.mtime` | date | Last modification time |
+| `file.size` | number | File size in bytes |
+| `file.tags` | list | YAML tags merged with inline `#tags` |
+
+`this.file.mtime` works as a deprecated alias for `file.mtime`.
+
+If you have a frontmatter field literally named `file`, use it as a bare identifier (`file` alone). Only `file.<member>` uses the metadata namespace.
+
+---
+
+## Value types
+
+| Type | Literals / sources | Notes |
+|------|-------------------|-------|
+| **null** | `null`, `None` | Renders empty; falsy for `default` / `choice` / `any` |
+| **boolean** | `true`, `false` | |
+| **number** | `42`, `3.14` | |
+| **string** | `"hello"`, `'text'` | Single or double quotes; `\` escapes the closing quote |
+| **date** | `file.mtime`, `date("2024-01-01")`, `date(now)`, `date(today)`, ISO YAML dates | Internal epoch ms; formatted with `dateformat` |
+| **duration** | `date - date`, `dur(1, "day")` | Internal ms length; display with `durationformat` |
+| **list** | YAML arrays, `file.tags`, `slice(...)` | Coerce to comma-separated text in output |
+
+---
+
+## Operators
+
+### Arithmetic
+
+| Op | Meaning | Notes |
+|----|---------|-------|
+| `+` | Add / concat | String if either side is a string |
+| `-` | Subtract | Numbers; dates/durations per table below |
+| `*` | Multiply | Numbers; duration × number scales duration |
+| `/` | Divide | Numbers; duration ÷ number scales duration |
+| `%` | Modulo | Numbers |
+
+### Date and duration arithmetic
+
+| Expression | Result | Example |
+|------------|--------|---------|
+| `date - date` | duration | `file.mtime - date(birthDate)` |
+| `date + duration` | date | `date(birthDate) + dur(25, "years")` |
+| `date - duration` | date | `file.mtime - dur(7, "days")` |
+| `duration + duration` | duration | |
+| `duration - duration` | duration | |
+| `duration * number` | duration | |
+| `duration / number` | duration | |
+
+### Comparison
+
+| Op | Meaning |
+|----|---------|
+| `==` | Equal (type-aware for dates/durations) |
+| `!=` | Not equal |
+| `<` `>` `<=` `>=` | Ordered compare (dates, numbers, durations) |
+
+### Logical
+
+| Op | Meaning |
+|----|---------|
+| `and`, `&&` | Both truthy |
+| `or` | Either truthy (prefer over `\|\|` — pipe characters break Markdown tables and inline code) |
+| `not` | Unary negation |
+
+### Member and index
+
+| Syntax | Meaning |
+|--------|---------|
+| `property.field` | Property access |
+| `list[0]` | List index (numeric) |
+
+### Grouping
+
+Parentheses `( )` control precedence.
+
+---
+
+## Functions
+
+### `default(value, fallback)`
+
+Returns `value` when truthy and non-empty; otherwise `fallback`.
+
+Empty string, `null`, and empty lists `[]` are treated as missing.
+
+```markdown
+`q= default(description, "<font color=\"#595959\">Add a description.</font>")`
+`q= default(title, "Untitled")`
+```
+
+### `choice(condition, ifTrue, ifFalse)`
+
+Boolean branch — like an if/else.
+
+```markdown
+`q= choice(any(tags), tags, "no tags")`
+`q= choice(any(description), "*" + description + "*", "No description")`
+```
+
+### `select(key, {k1, v1}, {k2, v2}, …)`
+
+Key-based lookup — like a switch. First argument is the value to match; remaining arguments are **`{ key, value }`** pairs.
+
+```markdown
+`q= select(2, {1, "Red"}, {2, "Green"}, {3, pageColour})`
+`q= select(characterStatus, {Alive, "Alive"}, {Dead, "Dead"}, {*, "Unknown"})`
+```
+
+- Keys may be numbers, strings, or property references.
+- Values may be literals, properties, or any expression.
+- **`{*, fallback}`**, **`{default, fallback}`**, or **`{_, fallback}`** — used when no key matches.
+
+### `any(value, …candidates)`
+
+**One argument:** `true` when the value exists and is non-empty (string or list).
+
+**Two or more arguments:** first argument is the property; remaining arguments are candidates. Returns `true` if **any** candidate is contained in the property (exact element match for lists; substring match for strings).
+
+```markdown
+`q= choice(any(tags), tags, "no tags")`
+`q= choice(any(bodyParts, "Feet", "Elbows"), "found", "not found")`
+`q= choice(any(parent), "**Parent:** " + parent, "")`
+```
+
+Example — `bodyParts: [Hand, Feet, Knees, Toes]`:
+
+| Expression | Result |
+|------------|--------|
+| `any(bodyParts)` | `true` |
+| `any(bodyParts, "Feet", "Elbows")` | `true` |
+| `any(bodyParts, "Nose", "Elbows", "Legs")` | `false` |
+
+### `slice(list, start, end?)`
+
+Returns a sub-list. `end` is optional (defaults to list length).
+
+```markdown
+`q= slice(epochTitles, 0, 1)`
+`q= choice(econtains(slice(epochTitles, 1, 2), ""), None, slice(epochTitles, 1, 2))`
+```
+
+### `contains(haystack, needle)`
+
+Substring match for strings; partial match for list elements.
+
+### `econtains(haystack, needle)`
+
+Exact element match in lists; exact key check for objects.
+
+### `dateformat(date, format)`
+
+Formats a date using **Luxon-style tokens** (aliased to Obsidian moment):
+
+| Token | Output |
+|-------|--------|
+| `yyyy` | 4-digit year |
+| `MM` | 2-digit month |
+| `dd` | 2-digit day |
+| `HH` | Hour (24h) |
+| `mm` | Minute |
+| `ss` | Second |
+
+```markdown
+`q= dateformat(file.mtime, "yyyy-MM-dd HH:mm:ss")`
+```
+
+### `dur(amount, unit)` / `dur("text")`
+
+Creates a duration value.
+
+```markdown
+`q= dur(1, "day")`
+`q= dur(3, "months")`
+`q= dur("1 day 2 hours")`
+```
+
+Common units: `years`, `months`, `weeks`, `days`, `hours`, `minutes`, `seconds`.
+
+### `durationformat(duration, format?)`
+
+Formats a **duration** value (from `date - date`, `dur(...)`, etc.).
+
+**Without a format string:** human-readable text, e.g. `5 days, 3 hours`.
+
+**With a format string:** uses **Luxon/Dataview-style duration tokens** (not the same tokens as `dateformat`):
+
+| Token | Meaning | Example output |
+|-------|---------|----------------|
+| `y`, `yy`, `yyyy` | Years | `24`, `04`, `2024` |
+| `M`, `MM` | Months (within duration) | `6`, `06` |
+| `d`, `dd` | Days (within duration) | `15`, `15` |
+| `h`, `hh`, `HH` | Hours (within duration) | `1`, `01` |
+| `m`, `mm` | Minutes | `30`, `30` |
+| `s`, `ss` | Seconds | `5`, `05` |
+| `S`, `SS`, `SSS` | Milliseconds | |
+
+Literal text in single quotes is preserved (e.g. `y' years'` → `24 years`).
+
+```markdown
+`q= durationformat(file.mtime - date(birthDate))`
+`q= durationformat(file.mtime - date(birthDate), "y' years'")`
+`q= durationformat(dur(90, "minutes"), "h:mm")`
+`q= durationformat(dur(5, "days") - dur(2, "days"), "d' days'")`
+```
+
+Note: `dateformat` formats **dates**; `durationformat` formats **durations**. Do not use date tokens like `yyyy-MM-dd` on durations — use `y`, `M`, `d`, `h`, `m`, `s` instead.
+
+### `date(string | now | today)`
+
+Parses an ISO-style date string, or the keywords **`now`** (current date/time) and **`today`** (start of local calendar day).
+
+```markdown
+`q= date("2000-01-01")`
+`q= dateformat(date(now), "yyyy-MM-dd HH:mm")`
+`q= dateformat(date(today), "yyyy-MM-dd")`
+```
+
+Both quoted and unquoted forms work: `date("today")` and `date(today)`.
+
+### `length(value)`
+
+Length of a string or list; `0` for null.
+
+### `coalesce(a, b, …)`
+
+Returns the first truthy argument.
+
+```markdown
+`q= coalesce(nickname, title, "Anonymous")`
+```
+
+### `join(list, separator)`
+
+Joins list elements with a separator (default comma if omitted in expression).
+
+```markdown
+`q= join(tags, ", ")`
+```
+
+---
+
+## Output rendering
+
+How results appear in Reading view:
+
+| Result kind | Rendering |
+|-------------|-----------|
+| HTML (`<font>`, `<br>`, `<em>`, …) | Rendered as HTML |
+| Markdown (`**bold**`, `[[links]]`, `![images]()`) | Rendered as Markdown |
+| Plain text / numbers | Inline text |
+| `null` / empty | Nothing shown |
+| Parse or runtime error | Red inline error (details when Debug mode is on) |
+
+### Common output patterns
+
+```markdown
+`q= "![](" + pageImage + ")"`
+`q= "**Parent:** " + parent`
+`q= default(title, "<em>Placeholder title</em>")`
+```
+
+---
+
+## Literals quick reference
+
+| Literal | Value |
+|---------|-------|
+| `true` / `false` | Boolean |
+| `null` / `None` | Null |
+| `"text"` / `'text'` | String |
+| `42` / `3.14` | Number |
+
+---
+
+## Coexistence with Dataview
+
+| Syntax | Handled by |
+|--------|------------|
+| `` `q= ...` `` | **Property Query** |
+| `` `= ...` `` | **Dataview** (inline DQL) |
+| ` ```dataview` blocks | **Dataview** |
+
+Both plugins can stay enabled at the same time.
+
+Property Query registers its Reading view processor **before** Dataview and automatically shields inline code that is only `=`, `==`, etc. — patterns Dataview mis-parses as inline queries. Expressions like `` `q= choice(numA == 10, "yes", "no")` `` are unaffected; only standalone `` `==` `` documentation snippets are shielded.
+
+Valid Dataview inline queries (`` `= this.file.name` ``, `` `$= ...` ``) are left alone.
+
+Do not set the inline prefix to `"="` — that would intercept Dataview's `` `= …` `` syntax.
+
+---
+
+## Settings reference
+
+All options are under **Settings → Community plugins → Property Query**.
+
+| Setting | Default | Effect |
+|---------|---------|--------|
+| **Inline prefix** | `q=` | Text at the start of inline code that marks a PQL expression. Cleared values fall back to `q=`. |
+| **Enable in Reading view** | on | Evaluate `` `q= …` `` and replace inline code with the result in Reading view and Live Preview preview DOM. |
+| **Syntax highlight inline queries** | on | Apply token colors in Source mode and Live Preview. In Reading view, highlights source only when evaluation is **off**. |
+| **Refresh on metadata change** | off | Re-render open Reading views when frontmatter or embedded note metadata changes. |
+| **Debug mode** | off | Show full parse/evaluation error text instead of *Property Query error*. |
+
+Changing **Enable in Reading view**, **Syntax highlight**, or **Inline prefix** re-renders open markdown previews so results update without reopening the note.
+
+### Syntax highlighting vs evaluation
+
+```mermaid
+flowchart TD
+  A["Inline code starts with prefix?"] -->|no| B[Plain inline code]
+  A -->|yes| C{Enable in Reading view?}
+  C -->|yes| D[Evaluate and show result]
+  C -->|no| E{Syntax highlight on?}
+  E -->|yes| F[Show colored query source]
+  E -->|no| G[Plain monospace source]
+```
+
+In the **editor** (Source / Live Preview), highlighting is independent of Reading view evaluation — it runs whenever **Syntax highlight inline queries** is on.
+
+Token colors: prefix, keywords, strings, numbers, identifiers, function names, operators, punctuation (theme-aware via Obsidian CSS variables).
+
+---
+
+## Not implemented (v0.2)
+
+- Live Preview inline **evaluation widget** (results in preview DOM only; editor shows highlighted source)
+- Syntax colors on **evaluated results** in Reading view
+- `$=` inline JavaScript
+- Block / table queries (`dv.pages()`, FLATTEN, …)
+- Cross-note `[[Other Note]].field` lookups
+
+See **README** for build instructions and **Settings** for prefix, syntax highlighting, and debug options.

@@ -1,36 +1,87 @@
-import { App, MarkdownPostProcessorContext, TFile } from "obsidian";
-import { buildThisContext } from "./context";
+import { App, MarkdownPostProcessorContext, MarkdownRenderChild, MarkdownRenderer, TFile } from "obsidian";
+import { buildQueryContext } from "./context";
+import { shieldDataviewInlineCodeFalsePositive } from "./dataviewCoexist";
+import { classifyOutput, valueToPlainString } from "./coerce";
+import { durationformat } from "./dates";
 import { evaluateExpressionSafe } from "./eval";
-import { literalString } from "./parse";
-import type { InlineQuerySettings, Value } from "./types";
+import { highlightExpressionHtml, splitPrefixExpression } from "./highlight";
+import type { PropertyQuerySettings, Value } from "./types";
 
-const HTML_TAG = /<[^>]+>/;
+class QueryResultRenderer extends MarkdownRenderChild {
+	constructor(
+		container: HTMLElement,
+		private app: App,
+		private body: string,
+		private sourcePath: string,
+	) {
+		super(container);
+	}
 
-function valueToDisplay(value: Value): string {
-	if (value === null) return "";
-	if (value instanceof Date) return value.toISOString();
-	if (typeof value === "boolean") return value ? "true" : "false";
-	if (typeof value === "number") return String(value);
-	if (Array.isArray(value)) return value.map(literalString).join(", ");
-	if (typeof value === "object") return JSON.stringify(value);
-	return String(value);
-}
-
-function renderResult(container: HTMLElement, value: Value): void {
-	container.empty();
-	container.addClass("iq-result");
-	const text = valueToDisplay(value);
-	if (HTML_TAG.test(text)) {
-		container.innerHTML = text;
-	} else {
-		container.setText(text);
+	onload(): void {
+		void MarkdownRenderer.render(this.app, this.body, this.containerEl, this.sourcePath, this);
 	}
 }
 
 function renderError(container: HTMLElement, message: string): void {
 	container.empty();
-	container.addClass("iq-error");
+	container.addClass("pq-error");
 	container.setText(message);
+}
+
+function renderPlain(container: HTMLElement, text: string): void {
+	container.empty();
+	container.addClass("pq-result");
+	container.setText(text);
+}
+
+function renderHtml(container: HTMLElement, html: string): void {
+	container.empty();
+	container.addClass("pq-result");
+	container.innerHTML = html;
+}
+
+function renderMarkdownValue(
+	app: App,
+	container: HTMLElement,
+	text: string,
+	sourcePath: string,
+	ctx: MarkdownPostProcessorContext,
+): void {
+	container.empty();
+	container.addClass("pq-result");
+	const child = new QueryResultRenderer(container, app, text, sourcePath);
+	ctx.addChild(child);
+}
+
+export function renderValue(
+	app: App,
+	container: HTMLElement,
+	value: Value,
+	sourcePath: string,
+	ctx: MarkdownPostProcessorContext,
+): void {
+	const kind = classifyOutput(value);
+	if (kind === "empty") {
+		container.empty();
+		container.addClass("pq-result");
+		return;
+	}
+
+	let text = valueToPlainString(value);
+	if (typeof value === "object" && value !== null && "__pqDuration" in value) {
+		text = durationformat(value);
+	}
+
+	switch (kind) {
+		case "html":
+			renderHtml(container, text);
+			break;
+		case "markdown":
+			renderMarkdownValue(app, container, text, sourcePath, ctx);
+			break;
+		default:
+			renderPlain(container, text);
+	}
 }
 
 function extractExpression(codeText: string, prefix: string): string | null {
@@ -44,46 +95,64 @@ function processInlineCodeElement(
 	codeEl: HTMLElement,
 	sourcePath: string,
 	prefix: string,
+	ctx: MarkdownPostProcessorContext,
+	debugMode: boolean,
 ): void {
-	if (codeEl.dataset.iqProcessed === "1") return;
+	if (codeEl.dataset.pqProcessed === "1") return;
 	if (codeEl.closest("pre")) return;
 
-	const expr = extractExpression(codeEl.textContent ?? "", prefix);
+	const expr = extractExpression(codeEl.innerText ?? "", prefix);
 	if (expr === null) return;
 
 	const file = app.vault.getAbstractFileByPath(sourcePath);
 	if (!(file instanceof TFile)) return;
 
-	codeEl.dataset.iqProcessed = "1";
+	codeEl.dataset.pqProcessed = "1";
 
-	const ctx = buildThisContext(app, file);
-	const result = evaluateExpressionSafe(expr, ctx);
+	const queryCtx = buildQueryContext(app, file);
+	const result = evaluateExpressionSafe(expr, queryCtx);
 
-	const host = createSpan("iq-inline");
+	const host = document.createElement("span");
+	host.className = "pq-inline";
 	codeEl.replaceWith(host);
 
 	if (!result.ok) {
-		renderError(host, result.error);
+		renderError(host, debugMode ? result.error : "Property Query error");
 		return;
 	}
-	renderResult(host, result.value);
+	renderValue(app, host, result.value, sourcePath, ctx);
 }
 
-function createSpan(cls: string): HTMLSpanElement {
-	const span = document.createElement("span");
-	span.className = cls;
-	return span;
+function highlightInlineCodeElement(codeEl: HTMLElement, prefix: string): void {
+	if (codeEl.dataset.pqHighlighted === "1" || codeEl.dataset.pqProcessed === "1") return;
+	if (codeEl.closest("pre")) return;
+
+	const codeText = codeEl.innerText ?? "";
+	const split = splitPrefixExpression(codeText, prefix);
+	if (!split) return;
+
+	codeEl.addClass("pq-query-source");
+	codeEl.innerHTML = highlightExpressionHtml(split.prefixPart, split.expr);
+	codeEl.dataset.pqHighlighted = "1";
 }
 
-export function processInlineQueriesInElement(
+export function processPropertyQueriesInElement(
 	app: App,
 	element: HTMLElement,
 	ctx: MarkdownPostProcessorContext,
-	settings: InlineQuerySettings,
+	settings: PropertyQuerySettings,
 ): void {
-	if (!settings.enableInReadingView) return;
+	if (!settings.enableInReadingView && !settings.enableSyntaxHighlight) return;
+
 	const prefix = settings.inlinePrefix;
 	for (const codeEl of element.findAll("code")) {
-		processInlineCodeElement(app, codeEl, ctx.sourcePath, prefix);
+		if (codeEl.closest("pre")) continue;
+		if (shieldDataviewInlineCodeFalsePositive(codeEl, prefix)) continue;
+
+		if (settings.enableInReadingView) {
+			processInlineCodeElement(app, codeEl, ctx.sourcePath, prefix, ctx, settings.debugMode);
+		} else if (settings.enableSyntaxHighlight) {
+			highlightInlineCodeElement(codeEl, prefix);
+		}
 	}
 }

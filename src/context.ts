@@ -1,9 +1,39 @@
+import type { CachedMetadata } from "obsidian";
 import { App, TFile } from "obsidian";
-import type { ThisContext, Value } from "./types";
+import { coerceYamlDate, pqDate } from "./dates";
+import type { FileMeta, QueryContext, Value } from "./types";
+
+function normalizeTag(tag: string): string {
+	return tag.replace(/^#+/, "").trim();
+}
+
+function mergeTags(fm: Record<string, unknown>, cache: CachedMetadata | null): string[] {
+	const fromYaml = toStringList(fm.tags);
+	const fromInline = (cache?.tags ?? []).map((t) => normalizeTag(t.tag));
+	const seen = new Set<string>();
+	const merged: string[] = [];
+	for (const tag of [...fromYaml, ...fromInline]) {
+		const norm = normalizeTag(tag);
+		if (!norm) continue;
+		const key = norm.toLowerCase();
+		if (seen.has(key)) continue;
+		seen.add(key);
+		merged.push(norm);
+	}
+	return merged;
+}
+
+function toStringList(raw: unknown): string[] {
+	if (raw === null || raw === undefined) return [];
+	if (Array.isArray(raw)) return raw.flatMap((v) => toStringList(v));
+	const str = String(raw).trim();
+	return str ? [str] : [];
+}
 
 function cloneValue(value: unknown): Value {
 	if (value === null || value === undefined) return null;
-	if (value instanceof Date) return new Date(value.getTime());
+	const asDate = coerceYamlDate(value);
+	if (asDate) return asDate;
 	if (Array.isArray(value)) return value.map((v) => cloneValue(v));
 	if (typeof value === "object") {
 		const out: Record<string, Value> = {};
@@ -18,22 +48,45 @@ function cloneValue(value: unknown): Value {
 	return String(value);
 }
 
-export function buildThisContext(app: App, file: TFile): ThisContext {
-	const cache = app.metadataCache.getFileCache(file);
-	const fm = cache?.frontmatter ?? {};
-	const ctx = cloneValue(fm) as Record<string, Value>;
-
-	ctx.file = {
+export function buildFileMeta(file: TFile, cache: CachedMetadata | null): FileMeta {
+	return {
 		name: file.basename.replace(/\.md$/i, ""),
 		path: file.path,
 		folder: file.parent?.path ?? "",
-		mtime: new Date(file.stat.mtime),
-		ctime: new Date(file.stat.ctime),
+		mtime: pqDate(file.stat.mtime),
+		ctime: pqDate(file.stat.ctime),
 		size: file.stat.size,
-		tags: (cache?.tags ?? []).map((t) => t.tag.replace(/^#/, "")),
+		tags: mergeTags((cache?.frontmatter as Record<string, unknown>) ?? {}, cache),
 	};
+}
 
-	return ctx as ThisContext;
+export function buildQueryContext(app: App, file: TFile): QueryContext {
+	const cache = app.metadataCache.getFileCache(file);
+	const fm = cache?.frontmatter ?? {};
+	const fields = cloneValue(fm) as Record<string, Value>;
+	const fileMeta = buildFileMeta(file, cache ?? null);
+	return { fields, file: fileMeta };
+}
+
+export function getFileField(file: FileMeta, property: string): Value {
+	switch (property) {
+		case "name":
+			return file.name;
+		case "path":
+			return file.path;
+		case "folder":
+			return file.folder;
+		case "mtime":
+			return file.mtime;
+		case "ctime":
+			return file.ctime;
+		case "size":
+			return file.size;
+		case "tags":
+			return file.tags;
+		default:
+			return null;
+	}
 }
 
 export function getMemberValue(base: Value, property: string): Value {
@@ -43,8 +96,13 @@ export function getMemberValue(base: Value, property: string): Value {
 		if (!Number.isNaN(index)) return base[index] ?? null;
 		return null;
 	}
-	if (typeof base === "object" && !(base instanceof Date)) {
+	if (typeof base === "object" && !("__pqDate" in base) && !("__pqDuration" in base)) {
 		return (base as Record<string, Value>)[property] ?? null;
 	}
 	return null;
+}
+
+export function resolveIdent(name: string, ctx: QueryContext): Value {
+	if (name === "this") return ctx.fields;
+	return ctx.fields[name] ?? null;
 }

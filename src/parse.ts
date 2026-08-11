@@ -1,4 +1,4 @@
-import type { AstNode, Value } from "./types";
+import type { AstNode, PqDate, PqDuration, Value } from "./types";
 
 type Token =
 	| { type: "number"; value: number }
@@ -7,6 +7,10 @@ type Token =
 	| { type: "op"; value: string }
 	| { type: "lparen" }
 	| { type: "rparen" }
+	| { type: "lbrace" }
+	| { type: "rbrace" }
+	| { type: "lbracket" }
+	| { type: "rbracket" }
 	| { type: "comma" }
 	| { type: "dot" }
 	| { type: "eof" };
@@ -14,7 +18,6 @@ type Token =
 function tokenize(input: string): Token[] {
 	const tokens: Token[] = [];
 	let i = 0;
-
 	const isIdentStart = (c: string): boolean => /[A-Za-z_]/.test(c);
 	const isIdentPart = (c: string): boolean => /[A-Za-z0-9_]/.test(c);
 
@@ -72,12 +75,48 @@ function tokenize(input: string): Token[] {
 			continue;
 		}
 
-		if ("+-*/<>=(),".includes(c)) {
-			if (c === "(") tokens.push({ type: "lparen" });
-			else if (c === ")") tokens.push({ type: "rparen" });
-			else if (c === ",") tokens.push({ type: "comma" });
-			else if (c === ".") tokens.push({ type: "dot" });
-			else tokens.push({ type: "op", value: c });
+		if (c === "(") {
+			tokens.push({ type: "lparen" });
+			i++;
+			continue;
+		}
+		if (c === ")") {
+			tokens.push({ type: "rparen" });
+			i++;
+			continue;
+		}
+		if (c === "{") {
+			tokens.push({ type: "lbrace" });
+			i++;
+			continue;
+		}
+		if (c === "}") {
+			tokens.push({ type: "rbrace" });
+			i++;
+			continue;
+		}
+		if (c === "[") {
+			tokens.push({ type: "lbracket" });
+			i++;
+			continue;
+		}
+		if (c === "]") {
+			tokens.push({ type: "rbracket" });
+			i++;
+			continue;
+		}
+		if (c === ",") {
+			tokens.push({ type: "comma" });
+			i++;
+			continue;
+		}
+		if (c === ".") {
+			tokens.push({ type: "dot" });
+			i++;
+			continue;
+		}
+		if ("+-*/<>=/%".includes(c)) {
+			tokens.push({ type: "op", value: c });
 			i++;
 			continue;
 		}
@@ -100,7 +139,7 @@ class Parser {
 
 	private parseOr(): AstNode {
 		let node = this.parseAnd();
-		while (this.matchOp("or", "||")) {
+		while (this.matchIdent("or") || this.matchOp("||")) {
 			node = { kind: "binary", op: "or", left: node, right: this.parseAnd() };
 		}
 		return node;
@@ -148,7 +187,7 @@ class Parser {
 		let node = this.parseUnary();
 		while (true) {
 			const t = this.peek();
-			if (t.type === "op" && (t.value === "*" || t.value === "/")) {
+			if (t.type === "op" && (t.value === "*" || t.value === "/" || t.value === "%")) {
 				const op = t.value;
 				this.advance();
 				node = { kind: "binary", op, left: node, right: this.parseUnary() };
@@ -177,6 +216,12 @@ class Parser {
 			if (this.match({ type: "dot" })) {
 				const prop = this.expectIdent();
 				node = { kind: "member", object: node, property: prop };
+				continue;
+			}
+			if (this.match({ type: "lbracket" })) {
+				const index = this.parseExpression();
+				this.expect({ type: "rbracket" });
+				node = { kind: "index", object: node, index };
 				continue;
 			}
 			if (this.match({ type: "lparen" })) {
@@ -215,6 +260,17 @@ class Parser {
 			if (lower === "false") return { kind: "literal", value: false };
 			if (lower === "null" || lower === "none") return { kind: "literal", value: null };
 			return { kind: "ident", name: t.value };
+		}
+		if (t.type === "op" && t.value === "*") {
+			this.advance();
+			return { kind: "literal", value: "*" };
+		}
+		if (this.match({ type: "lbrace" })) {
+			const key = this.parseExpression();
+			this.expect({ type: "comma" });
+			const value = this.parseExpression();
+			this.expect({ type: "rbrace" });
+			return { kind: "pair", key, value };
 		}
 		if (this.match({ type: "lparen" })) {
 			const expr = this.parseExpression();
@@ -275,14 +331,20 @@ export function parseExpression(source: string): AstNode {
 	const trimmed = source.trim();
 	if (!trimmed) throw new Error("Empty expression");
 	const parser = new Parser(tokenize(trimmed));
-	const ast = parser.parseExpression();
-	return ast;
+	return parser.parseExpression();
 }
 
 export function literalString(value: Value): string {
 	if (value === null) return "null";
-	if (value instanceof Date) return value.toISOString();
 	if (Array.isArray(value)) return value.map(literalString).join(", ");
-	if (typeof value === "object") return JSON.stringify(value);
+	if (typeof value === "object") {
+		if (value !== null && "__pqDate" in value && (value as PqDate).__pqDate === true) {
+			return new Date((value as PqDate).ms).toISOString();
+		}
+		if (value !== null && "__pqDuration" in value && (value as PqDuration).__pqDuration === true) {
+			return `${(value as PqDuration).ms}ms`;
+		}
+		return JSON.stringify(value);
+	}
 	return String(value);
 }

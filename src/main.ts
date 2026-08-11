@@ -1,35 +1,46 @@
-import { MarkdownView, Plugin } from "obsidian";
-import { InlineQuerySettingTab } from "./settings";
-import { processInlineQueriesInElement } from "./render";
-import { DEFAULT_SETTINGS, type InlineQuerySettings } from "./types";
+import { Compartment } from "@codemirror/state";
+import { Plugin, TFile } from "obsidian";
+import { pqEditorHighlightExtension } from "./editorHighlight";
+import { processPropertyQueriesInElement } from "./render";
+import { rerenderAllMarkdownViews, rerenderViewsForFile } from "./refresh";
+import { PropertyQuerySettingTab } from "./settings";
+import { DEFAULT_SETTINGS, type PropertyQuerySettings } from "./types";
 
-export default class InlineQueryPlugin extends Plugin {
-	settings: InlineQuerySettings = { ...DEFAULT_SETTINGS };
+export default class PropertyQueryPlugin extends Plugin {
+	settings: PropertyQuerySettings = { ...DEFAULT_SETTINGS };
+	private readonly highlightCompartment = new Compartment();
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
-		this.addSettingTab(new InlineQuerySettingTab(this.app, this));
+		this.addSettingTab(new PropertyQuerySettingTab(this.app, this));
 
+		// Run before Dataview (-100) so our queries and Dataview false-positive shields apply first.
 		this.registerMarkdownPostProcessor((element, ctx) => {
-			processInlineQueriesInElement(this.app, element, ctx, this.settings);
-		});
+			processPropertyQueriesInElement(this.app, element, ctx, this.settings);
+		}, -101);
+
+		this.registerEditorExtension(
+			this.highlightCompartment.of(pqEditorHighlightExtension(() => this.settings)),
+		);
 
 		this.registerEvent(
 			this.app.metadataCache.on("changed", (file) => {
-				const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (view?.file?.path === file.path) {
-					void view.previewMode?.rerender(true);
+				if (!this.settings.refreshOnMetadataChange) return;
+				if (file instanceof TFile) {
+					rerenderViewsForFile(this.app, file);
 				}
 			}),
 		);
 	}
 
 	async loadSettings(): Promise<void> {
-		const data = (await this.loadData()) as Partial<InlineQuerySettings> | null;
+		const data = (await this.loadData()) as Partial<PropertyQuerySettings> | null;
 		this.settings = { ...DEFAULT_SETTINGS, ...data };
 	}
 
 	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
+		this.highlightCompartment.reconfigure(pqEditorHighlightExtension(() => this.settings));
+		rerenderAllMarkdownViews(this.app);
 	}
 }
