@@ -1,7 +1,7 @@
 {
 	"id": "property-query",
 	"name": "Property Query",
-	"version": "0.2.0",
+	"version": "0.2.1",
 	"minAppVersion": "1.5.0",
 	"description": "Property Query Language (PQL) — inline metadata expressions with Reading view evaluation and syntax highlighting.",
 	"author": "FootPrintStudio",

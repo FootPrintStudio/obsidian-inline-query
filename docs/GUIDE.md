@@ -296,17 +296,20 @@ How results appear in Reading view:
 
 | Result kind | Rendering |
 |-------------|-----------|
-| HTML (`<font>`, `<br>`, `<em>`, …) | Rendered as HTML |
-| Markdown (`**bold**`, `[[links]]`, `![images]()`) | Rendered as Markdown |
+| Markdown (`**bold**`, `[[links]]`, `![images]()`) | Markdown (inline HTML like `<br>` allowed) |
+| HTML only (`<font>`, `<em>`, … — no markdown markers) | Rendered as HTML |
 | Plain text / numbers | Inline text |
 | `null` / empty | Nothing shown |
 | Parse or runtime error | Red inline error (details when Debug mode is on) |
+
+When a result contains **both** markdown markers and HTML tags, it is rendered as Markdown so formatting like `**bold**` still applies. Pure HTML strings without markdown markers still use the HTML path.
 
 ### Common output patterns
 
 ```markdown
 `q= "![](" + pageImage + ")"`
 `q= "**Parent:** " + parent`
+`q= choice(any(parent), "**Parent:** " + parent + "<br>", "")`
 `q= default(title, "<em>Placeholder title</em>")`
 ```
 

@@ -117,8 +117,8 @@ Duration literals: `dur(1, "day")`, `dur(3, "months")`, `dur("1 day 2 hours")`.
 
 | Result | Pipeline |
 |--------|----------|
-| HTML tags present | `innerHTML` |
-| Markdown markers / wikilinks | `MarkdownRenderer.render` |
+| Markdown markers / wikilinks (even with HTML tags like `<br>`) | `MarkdownRenderer.render` |
+| HTML tags only (no markdown markers) | `innerHTML` |
 | Plain text / numbers | text node |
 | `null` | empty |
 | Error | red inline `pq-error` |

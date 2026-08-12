@@ -1,4 +1,6 @@
 import { App, Component, MarkdownRenderer } from "obsidian";
+import EMBEDDED_README from "../README.md";
+import EMBEDDED_GUIDE from "../docs/GUIDE.md";
 
 export type PluginSettingsTabId = "settings" | "readme" | "guide";
 
@@ -20,7 +22,7 @@ export async function loadPluginMarkdown(
 			return await adapter.read(fullPath);
 		}
 	} catch {
-		// fall through
+		// fall through — BRAT installs often omit markdown docs
 	}
 	return fallback;
 }
@@ -77,7 +79,12 @@ export function renderReadmePanel(
 		container,
 		component,
 		panelClass,
-		loadPluginMarkdown("README.md", README_FALLBACK, pluginDir, app.vault.adapter),
+		loadPluginMarkdown(
+			"README.md",
+			EMBEDDED_README || README_FALLBACK,
+			pluginDir,
+			app.vault.adapter,
+		),
 	);
 }
 
@@ -93,6 +100,11 @@ export function renderGuidePanel(
 		container,
 		component,
 		panelClass,
-		loadPluginMarkdown("docs/GUIDE.md", GUIDE_FALLBACK, pluginDir, app.vault.adapter),
+		loadPluginMarkdown(
+			"docs/GUIDE.md",
+			EMBEDDED_GUIDE || GUIDE_FALLBACK,
+			pluginDir,
+			app.vault.adapter,
+		),
 	);
 }

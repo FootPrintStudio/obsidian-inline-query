@@ -29,9 +29,11 @@ export function classifyOutput(value: Value): OutputKind {
 	if (value === null) return "empty";
 	const text = valueToPlainString(value);
 	if (!text) return "empty";
-	if (HTML_TAG.test(text)) return "html";
+	// Prefer Markdown when both MD markers and HTML tags are present.
+	// MarkdownRenderer accepts inline HTML (e.g. <br>), so "**Parent**<br>" stays bold.
 	if (MARKDOWN_HINT.test(text)) return "markdown";
 	if (typeof value === "string" && (text.includes("[[") || text.includes("!["))) return "markdown";
+	if (HTML_TAG.test(text)) return "html";
 	return "text";
 }
 
