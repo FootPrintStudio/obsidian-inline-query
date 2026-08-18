@@ -2,9 +2,9 @@
 
 Inline metadata expressions for [Obsidian](https://obsidian.md). Write a `q=` query in inline code; Reading view shows the result. Append **`AS card`** (or button, list, …) to style the output.
 
-The expression language is **PQL**. The plugin display name is **Grimoire**.
+The expression language is **PQL**. Plugin **id** is `grimoire`.
 
-Repository: [FootPrintStudio/obsidian-inline-query](https://github.com/FootPrintStudio/obsidian-inline-query)
+Repository: [FootPrintStudio/obsidian-grimoire](https://github.com/FootPrintStudio/obsidian-grimoire)
 
 ```markdown
 `q= title`
@@ -23,19 +23,17 @@ Not in the Obsidian Community Plugins catalog.
 Install via [BRAT](https://github.com/TfTHacker/obsidian42-brat):
 
 1. Enable **BRAT** in Community Plugins.
-2. **Add Beta plugin** → `FootPrintStudio/obsidian-inline-query`
+2. **Add Beta plugin** → `FootPrintStudio/obsidian-grimoire`
 3. Enable **Grimoire** and reload Obsidian.
 
-BRAT installs from [GitHub Releases](https://github.com/FootPrintStudio/obsidian-inline-query/releases). Each release attaches `main.js`, `manifest.json`, `styles.css`, and `versions.json`.
-
-The plugin **id** remains `property-query` (folder name and `community-plugins.json` entry). Only the display name changed to Grimoire.
+BRAT installs from [GitHub Releases](https://github.com/FootPrintStudio/obsidian-grimoire/releases). Each release attaches `main.js`, `manifest.json`, `styles.css`, and `versions.json`.
 
 ### From source
 
 ```bash
 cd /path/to/vault/.obsidian/plugins
-git clone https://github.com/FootPrintStudio/obsidian-inline-query.git property-query
-cd property-query
+git clone https://github.com/FootPrintStudio/obsidian-grimoire.git grimoire
+cd grimoire
 bash build.sh
 ```
 
@@ -79,9 +77,13 @@ Syntax highlighting is controlled by **Syntax highlight inline queries** (on by 
 
 The settings UI includes **README** and **Guide** tabs with in-app documentation.
 
+## v0.4.0 features
+
+- Plugin **id** `grimoire` (folder `grimoire`, repo `FootPrintStudio/obsidian-grimoire`)
+
 ## v0.3.0 features
 
-- Plugin display name **Grimoire** (plugin id remains `property-query`)
+- Plugin display name **Grimoire**
 - Trailing **`AS <style>`** display styles: card, button, cards-code, inline, list
 - Button link-open setting (from Property Pretty)
 
@@ -114,7 +116,7 @@ Do not set the prefix to `"="` — that would intercept Dataview inline syntax.
 ## Build & test
 
 ```bash
-cd .obsidian/plugins/property-query
+cd .obsidian/plugins/grimoire
 bash build.sh      # writes main.js
 bash test.sh       # unit tests in /tmp
 ```

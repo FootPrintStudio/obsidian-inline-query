@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
-BUILD_DIR="$(mktemp -d /tmp/property-query-build.XXXXXX)"
+BUILD_DIR="$(mktemp -d /tmp/grimoire-build.XXXXXX)"
 cleanup() { rm -rf "$BUILD_DIR"; }
 trap cleanup EXIT
 

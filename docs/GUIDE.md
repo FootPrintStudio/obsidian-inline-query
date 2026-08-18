@@ -1,6 +1,6 @@
 # Grimoire — Language Guide
 
-Complete reference for **Property Query Language (PQL)** as implemented in Grimoire v0.3.0.
+Complete reference for **Property Query Language (PQL)** as implemented in Grimoire v0.4.0.
 
 Expressions live in inline code with the **`q=`** prefix (configurable under Settings):
 
