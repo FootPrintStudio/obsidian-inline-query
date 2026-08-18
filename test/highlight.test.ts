@@ -22,6 +22,11 @@ describe("tokenizeForHighlight", () => {
 		expect(segments.find((s) => s.text === "choice")?.type).toBe("fn");
 		expect(segments.find((s) => s.text === "false")?.type).toBe("kw");
 	});
+
+	it("classifies as as a keyword", () => {
+		const segments = tokenizeForHighlight("title AS card");
+		expect(segments.find((s) => s.text.toLowerCase() === "as")?.type).toBe("kw");
+	});
 });
 
 describe("highlightExpressionHtml", () => {

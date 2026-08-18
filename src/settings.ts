@@ -5,15 +5,15 @@ import {
 	renderSettingsTabBar,
 	type PluginSettingsTabId,
 } from "./readmeTab";
-import type PropertyQueryPlugin from "./main";
+import type GrimoirePlugin from "./main";
 import { DEFAULT_SETTINGS } from "./types";
 
 export class PropertyQuerySettingTab extends PluginSettingTab {
-	plugin: PropertyQueryPlugin;
+	plugin: GrimoirePlugin;
 	private activeTab: PluginSettingsTabId = "settings";
 	private docComponent = new Component();
 
-	constructor(app: App, plugin: PropertyQueryPlugin) {
+	constructor(app: App, plugin: GrimoirePlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
@@ -28,7 +28,7 @@ export class PropertyQuerySettingTab extends PluginSettingTab {
 		this.docComponent.unload();
 		this.docComponent = new Component();
 
-		containerEl.createEl("h2", { text: "Property Query" });
+		containerEl.createEl("h2", { text: "Grimoire" });
 
 		const tabBar = containerEl.createDiv();
 		renderSettingsTabBar(tabBar, this.activeTab, (tab) => {
@@ -56,7 +56,7 @@ export class PropertyQuerySettingTab extends PluginSettingTab {
 
 	private displaySettings(containerEl: HTMLElement): void {
 		containerEl.createEl("p", {
-			text: "Evaluate inline Property Query expressions in Reading view. See the Guide tab for the full language reference.",
+			text: "Evaluate inline Grimoire expressions in Reading view. See the Guide tab for the full language reference.",
 		});
 
 		new Setting(containerEl)
@@ -71,7 +71,7 @@ export class PropertyQuerySettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Enable in Reading view")
-			.setDesc("Evaluate Property Query expressions when notes render in Reading view.")
+			.setDesc("Evaluate Grimoire expressions when notes render in Reading view.")
 			.addToggle((toggle) =>
 				toggle.setValue(this.plugin.settings.enableInReadingView).onChange(async (value) => {
 					this.plugin.settings.enableInReadingView = value;
@@ -102,6 +102,23 @@ export class PropertyQuerySettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}),
 			);
+
+		new Setting(containerEl)
+			.setName("Button link open")
+			.setDesc("Default pane when clicking AS button links. Ctrl/Cmd and middle-click still override.")
+			.addDropdown((dropdown) => {
+				dropdown
+					.addOption("default", "Same as Obsidian links")
+					.addOption("current", "Current pane")
+					.addOption("tab", "New tab")
+					.addOption("split", "Split pane")
+					.addOption("window", "New window")
+					.setValue(this.plugin.settings.linkOpenBehavior)
+					.onChange(async (value) => {
+						this.plugin.settings.linkOpenBehavior = value as typeof this.plugin.settings.linkOpenBehavior;
+						await this.plugin.saveSettings();
+					});
+			});
 
 		new Setting(containerEl)
 			.setName("Debug mode")

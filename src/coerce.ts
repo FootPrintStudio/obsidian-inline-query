@@ -1,5 +1,5 @@
 import { isPqDate, isPqDuration } from "./dates";
-import type { Value } from "./types";
+import type { OutputKind, Value } from "./types";
 
 const HTML_TAG = /<[^>]+>/;
 const MARKDOWN_HINT = /(\*\*|__|\*|_|!\[|\[\[|^#+\s)/m;
@@ -23,7 +23,19 @@ export function valueToPlainString(value: Value): string {
 	return String(value);
 }
 
-export type OutputKind = "empty" | "html" | "markdown" | "text";
+export function containsHtmlTag(text: string): boolean {
+	return HTML_TAG.test(text);
+}
+
+export function valueToStyleItems(value: Value): string[] {
+	if (value === null || value === undefined) return [];
+	if (Array.isArray(value)) {
+		return value.flatMap((item) => valueToStyleItems(item)).filter((s) => s.length > 0);
+	}
+	const text = valueToPlainString(value).trim();
+	if (!text) return [];
+	return [text];
+}
 
 export function classifyOutput(value: Value): OutputKind {
 	if (value === null) return "empty";

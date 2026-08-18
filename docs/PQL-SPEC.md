@@ -1,6 +1,6 @@
-# Property Query Language (PQL) — Specification v0.2
+# Property Query Language (PQL) — Specification v0.3
 
-Property Query evaluates inline expressions in Obsidian **Reading view** using the `q=` prefix (configurable).
+Grimoire evaluates inline PQL expressions in Obsidian **Reading view** using the `q=` prefix (configurable).
 
 ```markdown
 `q= default(title, "Untitled")`
@@ -113,6 +113,17 @@ Duration literals: `dur(1, "day")`, `dur(3, "months")`, `dur("1 day 2 hours")`.
 - Keys compared with type-aware equality
 - `{*, value}` or `{default, value}` or `{_, value}` — fallback when no key matches
 
+## Query grammar
+
+```
+query := expression [ "AS" style ]
+style := "card" | "cards" | "button" | "buttons" | "cards-code" | "code" | "inline" | "list" | …
+```
+
+`AS` is a trailing suffix, not an expression operator. `as` as a field name is still an identifier (`as AS card`).
+
+Hyphenated styles (`cards-code`) are a single style token.
+
 ## Output rendering
 
 | Result | Pipeline |
@@ -121,6 +132,7 @@ Duration literals: `dur(1, "day")`, `dur(3, "months")`, `dur("1 day 2 hours")`.
 | HTML tags only (no markdown markers) | `innerHTML` |
 | Plain text / numbers | text node |
 | `null` | empty |
+| `AS card` / `button` / `cards-code` / `inline` / `list` | Pretty-style chips, buttons, or list |
 | Error | red inline `pq-error` |
 
 ## Date formatting tokens

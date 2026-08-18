@@ -1,9 +1,12 @@
+import type { LinkOpenBehavior } from "./renderStyle";
+
 export interface PropertyQuerySettings {
 	inlinePrefix: string;
 	enableInReadingView: boolean;
 	enableSyntaxHighlight: boolean;
 	debugMode: boolean;
 	refreshOnMetadataChange: boolean;
+	linkOpenBehavior: LinkOpenBehavior;
 }
 
 export const DEFAULT_SETTINGS: PropertyQuerySettings = {
@@ -12,6 +15,7 @@ export const DEFAULT_SETTINGS: PropertyQuerySettings = {
 	enableSyntaxHighlight: true,
 	debugMode: false,
 	refreshOnMetadataChange: false,
+	linkOpenBehavior: "default",
 };
 
 /** Branded date value (epoch ms, interpreted via Obsidian moment). */
@@ -27,6 +31,8 @@ export interface PqDuration {
 	/** When present, date +/- uses calendar units (years, months, …) not fixed ms. */
 	readonly calendar?: ReadonlyArray<{ readonly amount: number; readonly unit: string }>;
 }
+
+export type OutputKind = "empty" | "markdown" | "html" | "text";
 
 export type Value =
 	| null

@@ -1,6 +1,6 @@
-# Property Query — testing checklist
+# Grimoire — testing checklist
 
-Open **`Property Query Test/00 Smoke Test.md`** in **Reading view** with Property Query enabled. The suite includes **three examples per function and operator** with an Expected column for manual verification.
+Open **`Property Query Test/00 Smoke Test.md`** in **Reading view** with Grimoire enabled. The suite includes **three examples per function and operator** with an Expected column for manual verification.
 
 ## Unit tests
 
@@ -8,7 +8,7 @@ Open **`Property Query Test/00 Smoke Test.md`** in **Reading view** with Propert
 bash test.sh
 ```
 
-39 tests cover parse, eval, dates, highlight tokenizer, and Dataview coexistence logic.
+Tests cover parse (including `AS` styles), eval, dates, highlight tokenizer, coerce, and Dataview coexistence logic.
 
 ## Reading view checklist
 
@@ -22,14 +22,17 @@ bash test.sh
 - [ ] Image markdown row renders an image
 - [ ] Epoch slice row shows empty or title segment
 - [ ] Duration row shows human-readable age span
-- [ ] Error row shows red inline message
+- [ ] Error row shows red inline message (*Grimoire error* unless Debug mode is on)
 - [ ] Dataview `` `= this.refreshMarker` `` still works when Dataview enabled
+- [ ] `` `q= … AS card` `` renders pill chips (HTML inside a card is allowed)
+- [ ] `` `q= file.tags AS card` `` renders clickable tag chips
+- [ ] `` `q= parent AS button` `` renders a link button
 
 ## Syntax highlighting checklist
 
 Requires **Syntax highlight inline queries** on (default).
 
-- [ ] **Source mode:** `` `q= choice(title, "Untitled")` `` shows colored tokens while editing
+- [ ] **Source mode:** `` `q= choice(title, "Untitled") AS card` `` shows colored tokens, including `as` as a keyword
 - [ ] **Reading view + eval off:** same expression shows colored source, not a result
 - [ ] **Reading view + eval on:** results replace inline code (no source colors)
 - [ ] Toggle **Syntax highlight inline queries** off → plain monospace everywhere

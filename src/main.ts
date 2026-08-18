@@ -6,7 +6,7 @@ import { rerenderAllMarkdownViews, rerenderViewsForFile } from "./refresh";
 import { PropertyQuerySettingTab } from "./settings";
 import { DEFAULT_SETTINGS, type PropertyQuerySettings } from "./types";
 
-export default class PropertyQueryPlugin extends Plugin {
+export default class GrimoirePlugin extends Plugin {
 	settings: PropertyQuerySettings = { ...DEFAULT_SETTINGS };
 	private readonly highlightCompartment = new Compartment();
 

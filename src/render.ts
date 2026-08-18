@@ -1,10 +1,11 @@
 import { App, MarkdownPostProcessorContext, MarkdownRenderChild, MarkdownRenderer, TFile } from "obsidian";
 import { buildQueryContext } from "./context";
 import { shieldDataviewInlineCodeFalsePositive } from "./dataviewCoexist";
-import { classifyOutput, valueToPlainString } from "./coerce";
+import { classifyOutput, valueToPlainString, valueToStyleItems } from "./coerce";
 import { durationformat } from "./dates";
 import { evaluateExpressionSafe } from "./eval";
 import { highlightExpressionHtml, splitPrefixExpression } from "./highlight";
+import { renderStyledValue } from "./renderStyles";
 import type { PropertyQuerySettings, Value } from "./types";
 
 class QueryResultRenderer extends MarkdownRenderChild {
@@ -96,7 +97,7 @@ function processInlineCodeElement(
 	sourcePath: string,
 	prefix: string,
 	ctx: MarkdownPostProcessorContext,
-	debugMode: boolean,
+	settings: PropertyQuerySettings,
 ): void {
 	if (codeEl.dataset.pqProcessed === "1") return;
 	if (codeEl.closest("pre")) return;
@@ -117,7 +118,18 @@ function processInlineCodeElement(
 	codeEl.replaceWith(host);
 
 	if (!result.ok) {
-		renderError(host, debugMode ? result.error : "Property Query error");
+		renderError(host, settings.debugMode ? result.error : "Grimoire error");
+		return;
+	}
+	if (result.style) {
+		renderStyledValue(
+			host,
+			result.style,
+			valueToStyleItems(result.value),
+			app,
+			sourcePath,
+			settings.linkOpenBehavior,
+		);
 		return;
 	}
 	renderValue(app, host, result.value, sourcePath, ctx);
@@ -150,7 +162,7 @@ export function processPropertyQueriesInElement(
 		if (shieldDataviewInlineCodeFalsePositive(codeEl, prefix)) continue;
 
 		if (settings.enableInReadingView) {
-			processInlineCodeElement(app, codeEl, ctx.sourcePath, prefix, ctx, settings.debugMode);
+			processInlineCodeElement(app, codeEl, ctx.sourcePath, prefix, ctx, settings);
 		} else if (settings.enableSyntaxHighlight) {
 			highlightInlineCodeElement(codeEl, prefix);
 		}

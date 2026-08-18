@@ -1,3 +1,4 @@
+import { parseRenderStyleName, type RenderStyle } from "./renderStyle";
 import type { AstNode, PqDate, PqDuration, Value } from "./types";
 
 type Token =
@@ -325,6 +326,27 @@ class Parser {
 		this.advance();
 		return t.value;
 	}
+
+	private parseStyleToken(): string {
+		const first = this.expectIdent();
+		let name = first;
+		while (this.matchOp("-")) {
+			name += "-" + this.expectIdent();
+		}
+		return name;
+	}
+
+	parseQuery(): { ast: AstNode; style: RenderStyle | null } {
+		const ast = this.parseExpression();
+		let style: RenderStyle | null = null;
+		if (this.matchIdent("as")) {
+			style = parseRenderStyleName(this.parseStyleToken());
+		}
+		if (this.peek().type !== "eof") {
+			throw new Error("Unexpected token after expression");
+		}
+		return { ast, style };
+	}
 }
 
 export function parseExpression(source: string): AstNode {
@@ -332,6 +354,13 @@ export function parseExpression(source: string): AstNode {
 	if (!trimmed) throw new Error("Empty expression");
 	const parser = new Parser(tokenize(trimmed));
 	return parser.parseExpression();
+}
+
+export function parseQuery(source: string): { ast: AstNode; style: RenderStyle | null } {
+	const trimmed = source.trim();
+	if (!trimmed) throw new Error("Empty expression");
+	const parser = new Parser(tokenize(trimmed));
+	return parser.parseQuery();
 }
 
 export function literalString(value: Value): string {

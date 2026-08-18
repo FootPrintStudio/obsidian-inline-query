@@ -24,7 +24,8 @@ import {
 	toPqDuration,
 } from "./dates";
 import { getMemberValue, getFileField, resolveIdent } from "./context";
-import { parseExpression } from "./parse";
+import { parseExpression, parseQuery } from "./parse";
+import type { RenderStyle } from "./renderStyle";
 import type { AstNode, FileMeta, QueryContext, Value } from "./types";
 
 function isTruthy(value: Value): boolean {
@@ -303,9 +304,10 @@ export function evaluateExpression(source: string, ctx: QueryContext): Value {
 export function evaluateExpressionSafe(
 	source: string,
 	ctx: QueryContext,
-): { ok: true; value: Value } | { ok: false; error: string } {
+): { ok: true; value: Value; style: RenderStyle | null } | { ok: false; error: string } {
 	try {
-		return { ok: true, value: evalNode(parseExpression(source), ctx) };
+		const { ast, style } = parseQuery(source);
+		return { ok: true, value: evalNode(ast, ctx), style };
 	} catch (e) {
 		return { ok: false, error: e instanceof Error ? e.message : String(e) };
 	}

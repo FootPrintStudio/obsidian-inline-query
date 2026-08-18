@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { moment } from "obsidian";
 import { pqDate } from "../src/dates";
-import { createTestContext, evaluateExpression } from "../src/eval";
+import { createTestContext, evaluateExpression, evaluateExpressionSafe } from "../src/eval";
 import { parseExpression } from "../src/parse";
 
 describe("parse", () => {
@@ -164,5 +164,26 @@ describe("date and duration", () => {
 		const ageCtx = createTestContext({ fields: { birth, now } });
 		const formatted = evaluateExpression('durationformat(now - birth, "y\' years\'")', ageCtx);
 		expect(formatted).toMatch(/^24 years$/);
+	});
+});
+
+describe("evaluateExpressionSafe styles", () => {
+	it("returns style from a trailing AS clause", () => {
+		const ctx = createTestContext({ fields: { characterStatus: "" } });
+		const result = evaluateExpressionSafe(
+			'default(characterStatus, "<font color=\\"#595959\\">Alive, Dead, Undead.</font>") AS card',
+			ctx,
+		);
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.style).toBe("cards");
+			expect(String(result.value)).toContain("Alive");
+		}
+	});
+
+	it("returns null style without AS", () => {
+		const result = evaluateExpressionSafe("title", createTestContext({ fields: { title: "Hello" } }));
+		expect(result.ok).toBe(true);
+		if (result.ok) expect(result.style).toBeNull();
 	});
 });

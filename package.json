@@ -1,7 +1,7 @@
 {
 	"name": "obsidian-property-query",
-	"version": "0.2.1",
-	"description": "Property Query Language — inline metadata expressions for Obsidian.",
+	"version": "0.3.0",
+	"description": "Grimoire — inline metadata expressions for Obsidian.",
 	"main": "main.js",
 	"type": "module",
 	"scripts": {

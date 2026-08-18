@@ -1,10 +1,1 @@
-{
-	"id": "property-query",
-	"name": "Property Query",
-	"version": "0.2.1",
-	"minAppVersion": "1.5.0",
-	"description": "Property Query Language (PQL) — inline metadata expressions with Reading view evaluation and syntax highlighting.",
-	"author": "FootPrintStudio",
-	"authorUrl": "https://github.com/FootPrintStudio",
-	"isDesktopOnly": false
-}
+{"id":"property-query","name":"Grimoire","version":"0.3.0","minAppVersion":"1.5.0","description":"Inline metadata expressions with optional card, button, list, and code styles.","author":"FootPrintStudio","authorUrl":"https://github.com/FootPrintStudio","isDesktopOnly":false}

@@ -1,11 +1,12 @@
-# Property Query — Language Guide
+# Grimoire — Language Guide
 
-Complete reference for **Property Query Language (PQL)** as implemented in v0.2.0.
+Complete reference for **Property Query Language (PQL)** as implemented in Grimoire v0.3.0.
 
 Expressions live in inline code with the **`q=`** prefix (configurable under Settings):
 
 ```markdown
 `q= default(title, "Untitled")`
+`q= default(characterStatus, "<font color=\"#595959\">Alive, Dead, Undead.</font>") AS card`
 ```
 
 Open notes in **Reading view** to see results when **Enable in Reading view** is on. With evaluation off, Reading view shows syntax-colored query source instead.
@@ -20,6 +21,7 @@ Open notes in **Reading view** to see results when **Enable in Reading view** is
 |------|------|
 | Prefix | `q=` at the start of inline code (default) |
 | Body | Single PQL expression |
+| Style | Optional trailing `AS <style>` (not part of the expression) |
 | Scope | Always the **current note** being rendered |
 | Whitespace | Ignored outside quoted strings |
 
@@ -304,6 +306,29 @@ How results appear in Reading view:
 
 When a result contains **both** markdown markers and HTML tags, it is rendered as Markdown so formatting like `**bold**` still applies. Pure HTML strings without markdown markers still use the HTML path.
 
+### Display styles (`AS`)
+
+Append **`AS <style>`** after the expression to force a Pretty-style layout. `AS` is a query suffix: parse the expression first, then an optional style name. A frontmatter field named `as` still works (`as AS card`).
+
+```markdown
+`q= default(characterStatus, "<font color=\"#595959\">Alive, Dead, Undead.</font>") AS card`
+`q= file.tags AS card`
+`q= parent AS button`
+`q= cssclasses AS cards-code`
+`q= tags AS inline`
+`q= bodyParts AS list`
+```
+
+| Style | Aliases | Result |
+|-------|---------|--------|
+| `card` | `cards` | Pill chips. One chip per list item; a single string is one chip. Tag-like tokens (`#alpha`, `alpha`) are clickable search chips. Other chips render HTML when tags are present. |
+| `button` | `buttons` | Link buttons for `[[Note]]`, `[label](url)`, or `https://…` |
+| `cards-code` | `code`, `code-card`, `codecard` | Monospace chips with a leading `.` |
+| `inline` | | Comma-separated text |
+| `list` | | Bulleted `<ul>` |
+
+Without `AS`, output uses the default markdown / HTML / plain pipeline above.
+
 ### Common output patterns
 
 ```markdown
@@ -330,13 +355,13 @@ When a result contains **both** markdown markers and HTML tags, it is rendered a
 
 | Syntax | Handled by |
 |--------|------------|
-| `` `q= ...` `` | **Property Query** |
+| `` `q= ...` `` | **Grimoire** |
 | `` `= ...` `` | **Dataview** (inline DQL) |
 | ` ```dataview` blocks | **Dataview** |
 
 Both plugins can stay enabled at the same time.
 
-Property Query registers its Reading view processor **before** Dataview and automatically shields inline code that is only `=`, `==`, etc. — patterns Dataview mis-parses as inline queries. Expressions like `` `q= choice(numA == 10, "yes", "no")` `` are unaffected; only standalone `` `==` `` documentation snippets are shielded.
+Grimoire registers its Reading view processor **before** Dataview and automatically shields inline code that is only `=`, `==`, etc. — patterns Dataview mis-parses as inline queries. Expressions like `` `q= choice(numA == 10, "yes", "no")` `` are unaffected; only standalone `` `==` `` documentation snippets are shielded.
 
 Valid Dataview inline queries (`` `= this.file.name` ``, `` `$= ...` ``) are left alone.
 
@@ -346,15 +371,16 @@ Do not set the inline prefix to `"="` — that would intercept Dataview's `` `= 
 
 ## Settings reference
 
-All options are under **Settings → Community plugins → Property Query**.
+All options are under **Settings → Community plugins → Grimoire**.
 
 | Setting | Default | Effect |
 |---------|---------|--------|
-| **Inline prefix** | `q=` | Text at the start of inline code that marks a PQL expression. Cleared values fall back to `q=`. |
+| **Inline prefix** | `q=` | Text at the start of inline code that marks a Grimoire expression. Cleared values fall back to `q=`. |
 | **Enable in Reading view** | on | Evaluate `` `q= …` `` and replace inline code with the result in Reading view and Live Preview preview DOM. |
 | **Syntax highlight inline queries** | on | Apply token colors in Source mode and Live Preview. In Reading view, highlights source only when evaluation is **off**. |
 | **Refresh on metadata change** | off | Re-render open Reading views when frontmatter or embedded note metadata changes. |
-| **Debug mode** | off | Show full parse/evaluation error text instead of *Property Query error*. |
+| **Button link open** | Same as Obsidian links | Default pane for `AS button` internal links. Ctrl/Cmd and middle-click still override. |
+| **Debug mode** | off | Show full parse/evaluation error text instead of *Grimoire error*. |
 
 Changing **Enable in Reading view**, **Syntax highlight**, or **Inline prefix** re-renders open markdown previews so results update without reopening the note.
 
@@ -376,7 +402,7 @@ Token colors: prefix, keywords, strings, numbers, identifiers, function names, o
 
 ---
 
-## Not implemented (v0.2)
+## Not implemented (v0.3)
 
 - Live Preview inline **evaluation widget** (results in preview DOM only; editor shows highlighted source)
 - Syntax colors on **evaluated results** in Reading view
@@ -384,4 +410,4 @@ Token colors: prefix, keywords, strings, numbers, identifiers, function names, o
 - Block / table queries (`dv.pages()`, FLATTEN, …)
 - Cross-note `[[Other Note]].field` lookups
 
-See **README** for build instructions and **Settings** for prefix, syntax highlighting, and debug options.
+See **README** for build instructions and **Settings** for prefix, syntax highlighting, display styles, and debug options.

@@ -17,7 +17,7 @@ export type HighlightClass =
 	| "punct"
 	| "text";
 
-const KEYWORDS = new Set(["true", "false", "null", "none", "and", "or", "not"]);
+const KEYWORDS = new Set(["true", "false", "null", "none", "and", "or", "not", "as"]);
 
 function escapeHtml(text: string): string {
 	return text
